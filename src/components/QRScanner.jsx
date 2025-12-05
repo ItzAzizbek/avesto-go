@@ -49,13 +49,45 @@ const QRScanner = () => {
   };
 
   const onScanSuccess = (decodedText) => {
-    // Parse QR code URL
+    console.log('🔍 QR Code Scanned:', decodedText);
+    
+    // Parse QR code - supports multiple formats
     try {
-      const url = new URL(decodedText.startsWith('http') ? decodedText : `https://dummy.com${decodedText}`);
-      const tableID = url.searchParams.get('tableID');
-      const location = url.searchParams.get('location');
+      let tableID = null;
+      let location = null;
+      
+      // Try URL format first: https://example.com?tableID=X&location=Y
+      if (decodedText.includes('tableID') || decodedText.includes('location')) {
+        const url = new URL(decodedText.startsWith('http') ? decodedText : `https://dummy.com?${decodedText}`);
+        tableID = url.searchParams.get('tableID');
+        location = url.searchParams.get('location');
+        console.log('📋 Parsed as URL - tableID:', tableID, 'location:', location);
+      }
+      
+      // Try JSON format: {"tableID": "X", "location": "Y"}
+      if (!tableID && !location) {
+        try {
+          const json = JSON.parse(decodedText);
+          tableID = json.tableID || json.table || json.table_id;
+          location = json.location || json.loc;
+          console.log('📋 Parsed as JSON - tableID:', tableID, 'location:', location);
+        } catch (e) {
+          // Not JSON, continue
+        }
+      }
+      
+      // Try simple format: tableID|location
+      if (!tableID && !location && decodedText.includes('|')) {
+        const parts = decodedText.split('|');
+        if (parts.length >= 2) {
+          tableID = parts[0].trim();
+          location = parts[1].trim();
+          console.log('📋 Parsed as pipe-separated - tableID:', tableID, 'location:', location);
+        }
+      }
 
       if (tableID && location) {
+        console.log('✅ Valid QR - navigating to menu');
         // Save dine-in data
         saveDineInData(tableID, location);
 
@@ -67,11 +99,12 @@ const QRScanner = () => {
         // Navigate to menu
         setCurrentView('menu');
       } else {
-        setError(t('invalid_qr'));
+        console.error('❌ Invalid QR - missing tableID or location. Raw content:', decodedText);
+        setError(`${t('invalid_qr')} - QR: "${decodedText.substring(0, 50)}..."`);
       }
     } catch (err) {
-      console.error('Error parsing QR code:', err);
-      setError(t('invalid_qr'));
+      console.error('❌ Error parsing QR code:', err, 'Raw content:', decodedText);
+      setError(`${t('invalid_qr')} - ${err.message}`);
     }
   };
 
