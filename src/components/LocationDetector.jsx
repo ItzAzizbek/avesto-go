@@ -30,6 +30,13 @@ const LocationDetector = () => {
       
       setIsOutsideBuilding(!result.isInside);
       
+      // 🔒 DELIVERY DISABLED FOR TESTING - ALWAYS ROUTE TO QR SCANNER
+      console.log('⚠️ Delivery mode disabled - routing all users to QR scanner');
+      setTimeout(() => {
+        setCurrentView('qr-scanner');
+      }, 500);
+      
+      /* ORIGINAL CODE - COMMENTED OUT FOR TESTING
       // Route based on location
       if (!result.isInside) {
         console.log('User is outside building - routing to menu for takeout');
@@ -44,6 +51,7 @@ const LocationDetector = () => {
           setCurrentView('qr-scanner');
         }, 500);
       }
+      */
       
     } catch (err) {
       console.error('Location error:', err);
